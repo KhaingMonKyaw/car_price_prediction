@@ -12,12 +12,37 @@ from sklearn.pipeline import Pipeline
 from sklearn.ensemble import RandomForestRegressor
 from utils import *
 
+from regularization import LassoRegression
+from sklearn.preprocessing import StandardScaler
+
+import importlib
+import regularization
+import mlflow
+
+regularization = importlib.reload(regularization)
+
+from sklearn.model_selection import KFold
+from regularization import (
+    LinearRegression,
+    NoRegularization,
+    PolynomialRegression,
+    LassoRegression,
+    RidgeRegression
+)
+
+from joblib import load
+from sklearn.metrics import mean_squared_error, r2_score
+from sklearn.preprocessing import StandardScaler
+import numpy as np
+from scipy.sparse import issparse
 
 # ============================================================
 # 1. LOAD the FOREST MODEL
 # ============================================================
 
-model_rf = load("models/car_price_model.pkl")
+l_model = load("models/car_price_model2.pkl")
+fold_preprocessor = load("models/car_price_model2_preprocessor.pkl")
+fold_scaler = load("models/car_price_model2_scaler.pkl")
 
 
 # ============================================================
@@ -26,7 +51,7 @@ model_rf = load("models/car_price_model.pkl")
 
 app = dash.Dash(__name__)
 
-app.title = "Car Price Prediction"
+app.title = "Car Price Prediction v2"
 
 
 # ============================================================
@@ -44,14 +69,45 @@ app.layout = html.Div(
     children=[
 
         html.H1(
-            "Car Price Prediction",
+            "Car Price Prediction v2",
             style={
                 "textAlign": "center"
             }
         ),
-
         html.P(
-            "Enter the car information below to predict its selling price.",
+            [
+                "The v2 car price prediction model performs better than v1 mainly "
+                "because of improvements in data preprocessing, feature engineering, "
+                "target transformation, and model optimization.",
+                html.Br(),
+                html.Br(),
+                "V2 also tested different optimization methods, learning rates, "
+                "initialization methods, and regularization techniques. The experiments "
+                "showed that ",
+                html.Strong(
+                    "Lasso regression with mini-batch gradient descent, Xavier "
+                    "initialization, and a learning rate of 0.01"
+                ),
+                " performed particularly well, achieving an R² of ",
+                html.Strong("0.8087"),
+                " during model comparison.",
+                html.Br(),
+                html.Br(),
+                "Finally, the selected v2 model achieved an ",
+                html.Strong("R² of 0.8656 on the test set"),
+                ", demonstrating strong predictive performance."
+            ],
+            style={
+                "backgroundColor": "#f4f8ff",
+                "padding": "20px",
+                "borderRadius": "8px",
+                "lineHeight": "1.6",
+                "color": "#333"
+            }
+        ),
+        html.Hr(),
+          html.P(
+            "Enter the car information below to predict its selling price. And click the button to get the prediction.",
             style={
                 "textAlign": "center",
                 "color": "#666"
@@ -395,7 +451,27 @@ def predict_price(
     # PREDICT LOG PRICE
     # --------------------------------------------------------
 
-    predicted_log_price = model_rf.predict(new_car)
+   # ...existing code...
+
+
+# ...existing code...
+
+    processed_car = fold_preprocessor.transform(new_car)
+
+    if issparse(processed_car):
+        processed_car = processed_car.toarray()
+
+    scaled_car = fold_scaler.transform(processed_car)
+
+    # The custom model expects an intercept plus 45 features.
+    scaled_car_with_intercept = np.hstack(
+        [np.ones((scaled_car.shape[0], 1)), scaled_car]
+    )
+
+    predicted_log_price = l_model.predict(scaled_car_with_intercept)
+
+# ...existing code...
+    #predicted_log_price = l_model.predict(fold_scaler.transform(fold_preprocessor.transform(new_car)))
 
     # --------------------------------------------------------
     # CONVERT BACK TO ORIGINAL PRICE

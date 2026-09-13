@@ -1,0 +1,5 @@
+Model,MSE,R2
+Polynomial,2.2572737077524377e+138,-4.00493988956036e+138
+Normal,inf,-inf
+Lasso,inf,-inf
+Ridge,inf,-inf

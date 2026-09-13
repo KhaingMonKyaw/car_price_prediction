@@ -1,0 +1,5 @@
+Model,Mean log MSE,Mean log R2
+Normal,inf,-inf
+Polynomial,inf,-inf
+Lasso,inf,-inf
+Ridge,inf,-inf

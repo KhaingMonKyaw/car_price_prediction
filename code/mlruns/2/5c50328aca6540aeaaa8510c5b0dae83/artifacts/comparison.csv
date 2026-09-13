@@ -1,0 +1,5 @@
+Model,Mean log MSE,Mean log R2
+Polynomial,7.638554024326803e+138,-1.3552609772364985e+139
+Normal,inf,-inf
+Lasso,inf,-inf
+Ridge,inf,-inf
