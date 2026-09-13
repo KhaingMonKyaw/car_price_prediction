@@ -15,7 +15,7 @@ docker compose up --build
 Open another terminal and execute:
 
 ```sh
-docker exec -it assignment1-dash-1 bash
+docker exec -it assignment2-dash-1 bash
 ```
 
 Then, inside the Docker container, run:
