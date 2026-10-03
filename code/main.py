@@ -1,49 +1,17 @@
 import dash
 from dash import dcc, html, Input, Output, State
 import pandas as pd
-import numpy as np
-import pickle
-
-
-from sklearn.model_selection import train_test_split
-from sklearn.compose import ColumnTransformer
-from sklearn.preprocessing import OneHotEncoder
-from sklearn.pipeline import Pipeline
-from sklearn.ensemble import RandomForestRegressor
 from utils import *
-
-from regularization import LassoRegression
-from sklearn.preprocessing import StandardScaler
-
-import importlib
-import regularization
-import mlflow
-
-regularization = importlib.reload(regularization)
-
-from sklearn.model_selection import KFold
-from regularization import (
-    LinearRegression,
-    NoRegularization,
-    PolynomialRegression,
-    LassoRegression,
-    RidgeRegression
-)
-
 from joblib import load
-from sklearn.metrics import mean_squared_error, r2_score
-from sklearn.preprocessing import StandardScaler
-import numpy as np
 from scipy.sparse import issparse
-
+import numpy as np
 # ============================================================
 # 1. LOAD the FOREST MODEL
 # ============================================================
 
-l_model = load("models/car_price_model2.pkl")
-fold_preprocessor = load("models/car_price_model2_preprocessor.pkl")
-fold_scaler = load("models/car_price_model2_scaler.pkl")
-
+c_model = load("models/car_price_classification_model.pkl")
+preprocessor = load("models/car_price_classification_preprocessor.pkl")
+scaler = load("models/car_price_classification_scaler.pkl")
 
 # ============================================================
 # 9. CREATE DASH APP
@@ -51,7 +19,7 @@ fold_scaler = load("models/car_price_model2_scaler.pkl")
 
 app = dash.Dash(__name__)
 
-app.title = "Car Price Prediction v2"
+app.title = "Car Price Prediction v3"
 
 
 # ============================================================
@@ -69,33 +37,16 @@ app.layout = html.Div(
     children=[
 
         html.H1(
-            "Car Price Prediction v2",
+            "Car Price Prediction v3",
             style={
                 "textAlign": "center"
             }
         ),
         html.P(
             [
-                "The v2 car price prediction model performs better than v1 mainly "
-                "because of improvements in data preprocessing, feature engineering, "
-                "target transformation, and model optimization.",
+                "The v3 car price classification model using Multinomial Logistic Regression. Instead of predicting the exact selling price of a car as a continuous value, the original selling price is divided into four discrete price classes (0, 1, 2, and 3). The model uses the preprocessed car dataset and predicts which price class a car belongs to based on its features.",
                 html.Br(),
-                html.Br(),
-                "V2 also tested different optimization methods, learning rates, "
-                "initialization methods, and regularization techniques. The experiments "
-                "showed that ",
-                html.Strong(
-                    "Lasso regression with mini-batch gradient descent, Xavier "
-                    "initialization, and a learning rate of 0.01"
-                ),
-                " performed particularly well, achieving an R² of ",
-                html.Strong("0.8087"),
-                " during model comparison.",
-                html.Br(),
-                html.Br(),
-                "Finally, the selected v2 model achieved an ",
-                html.Strong("R² of 0.8656 on the test set"),
-                ", demonstrating strong predictive performance."
+                html.Br()
             ],
             style={
                 "backgroundColor": "#f4f8ff",
@@ -107,7 +58,7 @@ app.layout = html.Div(
         ),
         html.Hr(),
           html.P(
-            "Enter the car information below to predict its selling price. And click the button to get the prediction.",
+            "Enter the car information below to predict its categories. And click the button to get the prediction.",
             style={
                 "textAlign": "center",
                 "color": "#666"
@@ -448,53 +399,53 @@ def predict_price(
     })
 
     # --------------------------------------------------------
-    # PREDICT LOG PRICE
+    # PREDICT CAR PRICE CATEGORY
     # --------------------------------------------------------
-
-   # ...existing code...
-
-
-# ...existing code...
-
-    processed_car = fold_preprocessor.transform(new_car)
+    
+    processed_car = preprocessor.transform(new_car)
 
     if issparse(processed_car):
         processed_car = processed_car.toarray()
 
-    scaled_car = fold_scaler.transform(processed_car)
+    scaled_car = scaler.transform(processed_car)
 
-    # The custom model expects an intercept plus 45 features.
-    scaled_car_with_intercept = np.hstack(
-        [np.ones((scaled_car.shape[0], 1)), scaled_car]
-    )
+    predicted_price_category = c_model.predict(scaled_car)
 
-    predicted_log_price = l_model.predict(scaled_car_with_intercept)
 
-# ...existing code...
-    #predicted_log_price = l_model.predict(fold_scaler.transform(fold_preprocessor.transform(new_car)))
+    price_ranges = {
+        0: (29999, 250000),
+        1: (250999, 500000),
+        2: (501000, 1000000),
+        3: (1019999, 10000000)
+    }
 
-    # --------------------------------------------------------
-    # CONVERT BACK TO ORIGINAL PRICE
-    # --------------------------------------------------------
-
-    predicted_price = np.exp(predicted_log_price[0])
+    category = int(predicted_price_category[0])
+    min_price, max_price = price_ranges[category]
 
     # --------------------------------------------------------
     # DISPLAY RESULT
     # --------------------------------------------------------
 
     return html.Div([
-        html.Div(
-            "Predicted Selling Price"
-        ),
+    html.Div(
+        "Predicted Selling Price Range"
+    ),
 
-        html.Div(
-            f"₹{predicted_price:,.2f}",
-            style={
-                "fontSize": "32px",
-                "marginTop": "10px"
-            }
-        )
+    html.Div(
+        f"₹{min_price:,.0f} – ₹{max_price:,.0f}",
+        style={
+            "fontSize": "32px",
+            "marginTop": "10px"
+        }
+    ),
+
+    html.Div(
+        f"Price Category: {category}",
+        style={
+            "fontSize": "18px",
+            "marginTop": "10px"
+        }
+    )
     ])
 
 
